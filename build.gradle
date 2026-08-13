@@ -139,6 +139,10 @@ tasks.named('jar', Jar).configure {
         into 'META-INF'
         rename { "LICENSE_${mod_id}" }
     }
+    from('ASSET_NOTICES.md') {
+        into 'META-INF'
+        rename { "ASSET_NOTICES_${mod_id}.md" }
+    }
     manifest {
         attributes([
                 'Specification-Title'   : mod_id,

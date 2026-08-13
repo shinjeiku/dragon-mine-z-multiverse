@@ -29,3 +29,7 @@ desktop.ini
 *.jks
 *.keystore
 .env
+
+# Source audio is converted to distributable Minecraft OGG assets.
+/god_charge.mp3
+/god_transform.mp3

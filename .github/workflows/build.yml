@@ -39,10 +39,52 @@ jobs:
           test -f run/logs/latest.log
           grep -Fq 'Done (' run/logs/latest.log
           grep -Fq 'All dimensions are saved' run/logs/latest.log
+          grep -Fq 'Installed Dragon Mine Z: Multiverse Saiyan form groups' run/logs/latest.log
           if grep -Fq 'Parsing error loading recipe dmz_multiverse' run/logs/latest.log; then
             echo 'Dragon Mine Z: Multiverse recipe loading failed.'
             exit 1
           fi
+
+      - name: Validate generated form progression
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('run/config/dragonminez')
+          forms_root = root / 'races/saiyan/forms'
+
+          def load(name):
+              with (forms_root / f'{name}.json').open(encoding='utf-8') as handle:
+                  return json.load(handle)
+
+          god = load('dmz_multiverse_godforms')['forms']
+          ultra = load('dmz_multiverse_ultraforms')['forms']
+          variants = load('dmz_multiverse_alignment_variants')['forms']
+
+          assert [god[name]['strMultiplier'] for name in god] == [5.0, 5.5, 6.0]
+          assert [ultra[name]['strMultiplier'] for name in ultra] == [7.5, 9.0, 9.75]
+          assert all(form['allowFreeTransformOnMastery'] == 0.0 for form in (*god.values(), *ultra.values(), *variants.values()))
+          assert ultra['mastered_ultra_instinct']['formRequisite'] == 'dmz_multiverse_ultraforms.ultra_instinct'
+
+          with (root / 'races/saiyan/character.json').open(encoding='utf-8') as handle:
+              costs = json.load(handle)['formSkillsCosts']
+          assert costs['dmz_multiverse_god_tiers']['prices'] == [5_000_000, 10_000_000, 15_000_000]
+          assert costs['dmz_multiverse_ultraforms']['prices'] == [30_000_000, 50_000_000, 55_000_000]
+          PY
+
+      - name: Validate packaged form and sound assets
+        shell: bash
+        run: |
+          artifact="$(find build/libs -maxdepth 1 -name 'dmz_multiverse-*.jar' ! -name '*-sources.jar' -print -quit)"
+          test -n "$artifact"
+          jar tf "$artifact" > jar-contents.txt
+          grep -Fqx 'assets/dmz_multiverse/sounds/god_transform.ogg' jar-contents.txt
+          grep -Fqx 'assets/dmz_multiverse/sounds/god_charge.ogg' jar-contents.txt
+          grep -Fqx 'assets/dragonminez/textures/gui/icons/dmz_multiverse_god_tiers.png' jar-contents.txt
+          grep -Fqx 'assets/dragonminez/textures/gui/icons/dmz_multiverse_ultraforms.png' jar-contents.txt
+          grep -Fqx 'assets/dragonminez/textures/gui/radial/dmz_multiverse_ultraforms.png' jar-contents.txt
 
       - name: Upload distributable
         uses: actions/upload-artifact@v4

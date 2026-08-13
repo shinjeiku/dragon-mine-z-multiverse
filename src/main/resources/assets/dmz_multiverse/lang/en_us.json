@@ -19,5 +19,20 @@
   "message.dmz_multiverse.already_there": "You are already in %s",
   "message.dmz_multiverse.no_safe_arrival": "No safe arrival point was found in %s",
   "message.dmz_multiverse.travel_denied": "Travel to %s was denied",
-  "message.dmz_multiverse.no_destinations": "No multiverse destinations are available"
+  "message.dmz_multiverse.no_destinations": "No multiverse destinations are available",
+  "skill.dragonminez.dmz_multiverse_god_tiers": "God Forms",
+  "skill.dragonminez.dmz_multiverse_god_tiers.desc": "Divine Saiyan transformations unlocked through mastery and immense training.",
+  "skill.dragonminez.dmz_multiverse_ultraforms": "Ultra Forms",
+  "skill.dragonminez.dmz_multiverse_ultraforms.desc": "Transformations that push divine power beyond its limits.",
+  "race.dragonminez.saiyan.group.dmz_multiverse_godforms": "God Forms",
+  "race.dragonminez.saiyan.form.dmz_multiverse_godforms.super_saiyan_god": "Super Saiyan God",
+  "race.dragonminez.saiyan.form.dmz_multiverse_godforms.super_saiyan_blue": "Super Saiyan Blue",
+  "race.dragonminez.saiyan.form.dmz_multiverse_godforms.super_saiyan_evolved": "Super Saiyan Evolved",
+  "race.dragonminez.saiyan.group.dmz_multiverse_ultraforms": "Ultra Forms",
+  "race.dragonminez.saiyan.form.dmz_multiverse_ultraforms.ultra_instinct": "Ultra Instinct",
+  "race.dragonminez.saiyan.form.dmz_multiverse_ultraforms.ultra_ego": "Ultra Ego",
+  "race.dragonminez.saiyan.form.dmz_multiverse_ultraforms.mastered_ultra_instinct": "Mastered Ultra Instinct",
+  "race.dragonminez.saiyan.group.dmz_multiverse_alignment_variants": "Alignment Variants",
+  "race.dragonminez.saiyan.form.dmz_multiverse_alignment_variants.super_saiyan_rose": "Super Saiyan Blue",
+  "race.dragonminez.saiyan.form.dmz_multiverse_alignment_variants.super_saiyan_evolved_corrupted": "Super Saiyan Evolved"
 }

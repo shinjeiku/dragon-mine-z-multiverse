@@ -1,0 +1,12 @@
+{
+  "god_transform": {
+    "sounds": [
+      "dmz_multiverse:god_transform"
+    ]
+  },
+  "god_charge": {
+    "sounds": [
+      "dmz_multiverse:god_charge"
+    ]
+  }
+}
