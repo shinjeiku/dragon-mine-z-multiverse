@@ -59,14 +59,32 @@ jobs:
               with (forms_root / f'{name}.json').open(encoding='utf-8') as handle:
                   return json.load(handle)
 
-          god = load('dmz_multiverse_godforms')['forms']
+          god_config = load('dmz_multiverse_godforms')
+          alignment_config = load('dmz_multiverse_alignment_variants')
+          god = god_config['forms']
           ultra = load('dmz_multiverse_ultraforms')['forms']
-          variants = load('dmz_multiverse_alignment_variants')['forms']
+          variants = alignment_config['forms']
 
           assert [god[name]['strMultiplier'] for name in god] == [5.0, 5.5, 6.0]
           assert [ultra[name]['strMultiplier'] for name in ultra] == [7.5, 9.0, 9.75]
           assert all(form['allowFreeTransformOnMastery'] == 0.0 for form in (*god.values(), *ultra.values(), *variants.values()))
           assert ultra['mastered_ultra_instinct']['formRequisite'] == 'dmz_multiverse_ultraforms.ultra_instinct'
+          assert alignment_config['formType'] == 'dmz_multiverse_god_tiers'
+          assert variants['super_saiyan_rose']['unlockOnSkillLevel'] == 2
+          assert variants['super_saiyan_evolved_corrupted']['unlockOnSkillLevel'] == 3
+          assert 'dmz_multiverse_alignment_variants.super_saiyan_rose' in god['super_saiyan_blue']['shareMasteryWith']
+          assert 'dmz_multiverse_godforms.super_saiyan_blue' in variants['super_saiyan_rose']['shareMasteryWith']
+          assert 'dmz_multiverse_alignment_variants.super_saiyan_evolved_corrupted' in god['super_saiyan_evolved']['shareMasteryWith']
+          assert 'dmz_multiverse_godforms.super_saiyan_evolved' in variants['super_saiyan_evolved_corrupted']['shareMasteryWith']
+
+          with (root / 'skills.json').open(encoding='utf-8') as handle:
+              skills = json.load(handle)
+          legacy = {'dmz_multiverse_internal', 'dmz_multiverse_god_internal'}
+          assert legacy.isdisjoint(map(str.lower, skills['skills']))
+          for category in ('kiSkills', 'formSkills', 'stackSkills', 'strikeSkills', 'androidBlacklistedForms'):
+              assert legacy.isdisjoint(map(str.lower, skills.get(category, ())))
+          for offering in skills.get('skillOfferings', {}).values():
+              assert legacy.isdisjoint(map(str.lower, offering))
 
           with (root / 'races/saiyan/character.json').open(encoding='utf-8') as handle:
               costs = json.load(handle)['formSkillsCosts']

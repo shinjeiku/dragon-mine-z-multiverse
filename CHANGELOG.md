@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented here.
 
+## 0.2.1 - 2026-08-13
+
+- Make the low-alignment Super Saiyan Blue and Evolved variants server-authoritative forms shared by every client.
+- Reuse the existing God Forms progression track for alignment variants and remove the obsolete internal skill entries from configs and player data.
+- Add `/dmzmultiverse maxskills [targets]` to max every applicable regular, ki, and strike skill without changing forms or stack forms.
+
 ## 0.2.0 - 2026-08-13
 
 - Add Super Saiyan God, Super Saiyan Blue, Super Saiyan Evolved, Ultra Instinct, Ultra Ego, and Mastered Ultra Instinct for Saiyans.

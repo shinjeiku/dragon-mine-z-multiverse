@@ -46,9 +46,10 @@ public final class MultiverseForms {
     // built-in godforms skill.
     public static final String GOD_SKILL = "dmz_multiverse_god_tiers";
     public static final String ULTRA_SKILL = ULTRA_GROUP;
-    // The hidden group still contains "god" so DMZ's ki-sense and lock-on
-    // rules classify its alignment-only palettes as divine transformations.
-    public static final String INTERNAL_SKILL = "dmz_multiverse_god_internal";
+    private static final Set<String> LEGACY_INTERNAL_SKILLS = Set.of(
+            "dmz_multiverse_internal",
+            "dmz_multiverse_god_internal"
+    );
 
     public static final String SUPER_SAIYAN_GOD = "super_saiyan_god";
     public static final String SUPER_SAIYAN_BLUE = "super_saiyan_blue";
@@ -121,6 +122,7 @@ public final class MultiverseForms {
                 writeFormIfAbsent(dmzConfigRoot, ULTRA_FORM_CONFIG, createUltraGroup());
                 writeFormIfAbsent(dmzConfigRoot, ALIGNMENT_FORM_CONFIG, createAlignmentGroup());
 
+                migrateOwnedFormConfigs(dmzConfigRoot);
                 mergeSkillsConfig(dmzConfigRoot.resolve(SKILLS_CONFIG + ".json"));
                 mergeSaiyanCosts(dmzConfigRoot.resolve(SAIYAN_CHARACTER_CONFIG + ".json"));
 
@@ -188,10 +190,7 @@ public final class MultiverseForms {
         return new FormKey(group, form);
     }
 
-    /**
-     * Alignment palette changes are presentation swaps, not transformations.
-     * Callers can use this helper to suppress transformation sounds/effects.
-     */
+    /** Returns whether two real form IDs represent the same progression tier. */
     public static boolean isSilentVariantSwap(String oldGroup, String oldForm, String newGroup, String newForm) {
         FormKey oldCanonical = canonicalEquivalent(oldGroup, oldForm);
         FormKey newCanonical = canonicalEquivalent(newGroup, newForm);
@@ -228,19 +227,126 @@ public final class MultiverseForms {
         changed |= addStringIfMissing(formSkills, ULTRA_SKILL);
 
         JsonObject skills = getOrCreateObject(root, "skills", path);
-        if (!skills.has(INTERNAL_SKILL)) {
-            JsonObject internal = new JsonObject();
-            internal.add("costs", new JsonArray());
-            JsonArray allowedRaces = new JsonArray();
-            allowedRaces.add("__internal__");
-            internal.add("allowedRaces", allowedRaces);
-            skills.add(INTERNAL_SKILL, internal);
-            changed = true;
-        }
+        changed |= removeLegacySkillKeys(skills);
+        changed |= removeLegacySkillIds(formSkills);
+        changed |= removeLegacySkillIds(root.getAsJsonArray("kiSkills"));
+        changed |= removeLegacySkillIds(root.getAsJsonArray("stackSkills"));
+        changed |= removeLegacySkillIds(root.getAsJsonArray("strikeSkills"));
+        changed |= removeLegacySkillIds(root.getAsJsonArray("androidBlacklistedForms"));
+        changed |= removeLegacySkillOfferings(root.getAsJsonObject("skillOfferings"));
 
         if (changed) {
             writeObjectAtomically(path, root);
         }
+    }
+
+    /**
+     * Migrates only invariants owned by this addon. Other values in the
+     * generated form files remain server-configurable.
+     */
+    private static void migrateOwnedFormConfigs(Path root) throws IOException {
+        Path godPath = root.resolve(GOD_FORM_CONFIG + ".json");
+        JsonObject godRoot = readObject(godPath);
+        JsonObject godForms = getRequiredObject(godRoot, "forms", godPath);
+        boolean godChanged = addMasteryShare(
+                getRequiredObject(godForms, SUPER_SAIYAN_BLUE, godPath),
+                ALIGNMENT_GROUP + "." + SUPER_SAIYAN_ROSE,
+                godPath
+        );
+        godChanged |= addMasteryShare(
+                getRequiredObject(godForms, SUPER_SAIYAN_EVOLVED, godPath),
+                ALIGNMENT_GROUP + "." + SUPER_SAIYAN_EVOLVED_CORRUPTED,
+                godPath
+        );
+        if (godChanged) {
+            writeObjectAtomically(godPath, godRoot);
+        }
+
+        Path alignmentPath = root.resolve(ALIGNMENT_FORM_CONFIG + ".json");
+        JsonObject alignmentRoot = readObject(alignmentPath);
+        boolean alignmentChanged = setString(alignmentRoot, "formType", GOD_SKILL);
+        JsonObject alignmentForms = getRequiredObject(alignmentRoot, "forms", alignmentPath);
+        JsonObject rose = getRequiredObject(alignmentForms, SUPER_SAIYAN_ROSE, alignmentPath);
+        alignmentChanged |= setInt(rose, "unlockOnSkillLevel", 2);
+        alignmentChanged |= addMasteryShare(
+                rose,
+                GOD_GROUP + "." + SUPER_SAIYAN_BLUE,
+                alignmentPath
+        );
+        JsonObject corrupted = getRequiredObject(
+                alignmentForms,
+                SUPER_SAIYAN_EVOLVED_CORRUPTED,
+                alignmentPath
+        );
+        alignmentChanged |= setInt(corrupted, "unlockOnSkillLevel", 3);
+        alignmentChanged |= addMasteryShare(
+                corrupted,
+                GOD_GROUP + "." + SUPER_SAIYAN_EVOLVED,
+                alignmentPath
+        );
+        if (alignmentChanged) {
+            writeObjectAtomically(alignmentPath, alignmentRoot);
+        }
+    }
+
+    private static boolean addMasteryShare(JsonObject form, String target, Path path) throws IOException {
+        return addStringIfMissing(getOrCreateArray(form, "shareMasteryWith", path), target);
+    }
+
+    private static boolean setString(JsonObject object, String key, String value) {
+        if (object.has(key) && object.get(key).isJsonPrimitive()
+                && value.equals(object.get(key).getAsString())) {
+            return false;
+        }
+        object.addProperty(key, value);
+        return true;
+    }
+
+    private static boolean setInt(JsonObject object, String key, int value) {
+        if (object.has(key) && object.get(key).isJsonPrimitive()
+                && object.get(key).getAsInt() == value) {
+            return false;
+        }
+        object.addProperty(key, value);
+        return true;
+    }
+
+    private static boolean removeLegacySkillKeys(JsonObject skills) {
+        List<String> keys = skills.entrySet().stream()
+                .map(Map.Entry::getKey)
+                .filter(key -> LEGACY_INTERNAL_SKILLS.contains(normalize(key)))
+                .toList();
+        keys.forEach(skills::remove);
+        return !keys.isEmpty();
+    }
+
+    private static boolean removeLegacySkillIds(JsonArray values) {
+        if (values == null) {
+            return false;
+        }
+        boolean changed = false;
+        for (int index = values.size() - 1; index >= 0; index--) {
+            JsonElement value = values.get(index);
+            if (value.isJsonPrimitive()
+                    && LEGACY_INTERNAL_SKILLS.contains(normalize(value.getAsString()))) {
+                values.remove(index);
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private static boolean removeLegacySkillOfferings(JsonObject offerings) {
+        if (offerings == null) {
+            return false;
+        }
+        boolean changed = false;
+        for (Map.Entry<String, JsonElement> entry : offerings.entrySet()) {
+            if (entry.getValue().isJsonArray()) {
+                changed |= removeLegacySkillIds(entry.getValue().getAsJsonArray());
+            }
+        }
+        return changed;
     }
 
     private static void mergeSaiyanCosts(Path path) throws IOException {
@@ -312,6 +418,13 @@ public final class MultiverseForms {
         return root.getAsJsonObject(key);
     }
 
+    private static JsonObject getRequiredObject(JsonObject root, String key, Path source) throws IOException {
+        if (!root.has(key) || !root.get(key).isJsonObject()) {
+            throw new IOException("Expected '" + key + "' to be an object in " + source);
+        }
+        return root.getAsJsonObject(key);
+    }
+
     private static boolean addStringIfMissing(JsonArray array, String value) {
         for (JsonElement element : array) {
             if (element.isJsonPrimitive() && element.getAsString().equalsIgnoreCase(value)) {
@@ -369,13 +482,13 @@ public final class MultiverseForms {
                 SUPER_SAIYAN_BLUE, 2, "ssj", BLUE, BLUE, BLUE, BLUE,
                 DEFAULT_SAIYAN_SCALE, 5.50, 4.0000, 0.26,
                 GOD_GROUP + "." + SUPER_SAIYAN_GOD, 100.0, false, "", false, "", "", 1.5,
-                List.of()
+                List.of(ALIGNMENT_GROUP + "." + SUPER_SAIYAN_ROSE)
         ));
         forms.put(SUPER_SAIYAN_EVOLVED, form(
                 SUPER_SAIYAN_EVOLVED, 3, "ssj2", ROYAL_BLUE, ROYAL_BLUE, ROYAL_BLUE, BLUE,
                 DEFAULT_SAIYAN_SCALE, 6.00, 4.3750, 0.28,
                 GOD_GROUP + "." + SUPER_SAIYAN_BLUE, 100.0, true, SSJ2_LIGHTNING, false, "", "", 1.5,
-                List.of()
+                List.of(ALIGNMENT_GROUP + "." + SUPER_SAIYAN_EVOLVED_CORRUPTED)
         ));
 
         group.setForms(forms);
@@ -410,20 +523,20 @@ public final class MultiverseForms {
     }
 
     private static FormConfig createAlignmentGroup() {
-        FormConfig group = group(ALIGNMENT_GROUP, INTERNAL_SKILL);
+        FormConfig group = group(ALIGNMENT_GROUP, GOD_SKILL);
         Map<String, FormConfig.FormData> forms = new LinkedHashMap<>();
 
         forms.put(SUPER_SAIYAN_ROSE, form(
-                SUPER_SAIYAN_ROSE, 4, "ssj", ROSE, ROSE, ROSE, RED,
+                SUPER_SAIYAN_ROSE, 2, "ssj", ROSE, ROSE, ROSE, RED,
                 DEFAULT_SAIYAN_SCALE, 5.50, 4.0000, 0.26,
                 GOD_GROUP + "." + SUPER_SAIYAN_GOD, 100.0, false, "", false, "", "", 1.5,
-                List.of()
+                List.of(GOD_GROUP + "." + SUPER_SAIYAN_BLUE)
         ));
         forms.put(SUPER_SAIYAN_EVOLVED_CORRUPTED, form(
-                SUPER_SAIYAN_EVOLVED_CORRUPTED, 4, "ssj2", DARK_ROSE, DARK_ROSE, DARK_ROSE, RED,
+                SUPER_SAIYAN_EVOLVED_CORRUPTED, 3, "ssj2", DARK_ROSE, DARK_ROSE, DARK_ROSE, RED,
                 DEFAULT_SAIYAN_SCALE, 6.00, 4.3750, 0.28,
                 GOD_GROUP + "." + SUPER_SAIYAN_BLUE, 100.0, true, SSJ2_LIGHTNING, false, "", "", 1.5,
-                List.of()
+                List.of(GOD_GROUP + "." + SUPER_SAIYAN_EVOLVED)
         ));
 
         group.setForms(forms);

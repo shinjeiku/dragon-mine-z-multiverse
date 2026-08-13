@@ -42,6 +42,15 @@ The compass reads Dragon Mine Z's reloadable Space Pod destination registry. Que
 
 The default successful-travel cooldown is 10 seconds. Server owners can change it, along with the safe-arrival search radius, in `config/dmz_multiverse-common.toml`.
 
+## Admin command
+
+Operators with permission level 2 can max every race-applicable Dragon Mine Z skill, including movement, utility, ki, and strike skills. Transformations and stack forms are excluded.
+
+- `/dmzmultiverse maxskills` maxes the executing player's applicable skills.
+- `/dmzmultiverse maxskills <targets>` maxes selected online players, such as `/dmzmultiverse maxskills @a`.
+
+Forms continue to use Dragon Mine Z's own `/dmzform` command. For example, `/dmzform set dmz_multiverse_god_tiers 3` and `/dmzform set dmz_multiverse_ultraforms 3` unlock the two Multiverse form tracks for testing.
+
 ## Building
 
 The repository includes a pinned Gradle wrapper and a Java 17 toolchain definition. On Windows, build with:
@@ -55,6 +64,8 @@ The distributable JAR is written to `build/libs/`. The development runtime resol
 ## Testing in Minecraft
 
 On Windows, double-click `Launch Minecraft Test Client.bat` in the project folder. It opens the Minecraft 1.20.1 Forge development client with Dragon Mine Z, its required dependencies, and Dragon Mine Z: Multiverse already loaded. The first launch may take several minutes while Gradle prepares the test environment.
+
+For a command smoke test, create a Dragon Mine Z character and run `/dmzmultiverse maxskills`. Confirm that movement and utility skills reach their configured caps, predefined ki and strike attacks appear in the technique list, and form and stack-form entries remain unchanged. Run `/dmzmultiverse maxskills @a` as an operator to verify target selection and multiplayer synchronization.
 
 ## License and attribution
 

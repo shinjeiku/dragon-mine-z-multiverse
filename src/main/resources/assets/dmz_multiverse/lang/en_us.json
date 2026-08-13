@@ -34,5 +34,10 @@
   "race.dragonminez.saiyan.form.dmz_multiverse_ultraforms.mastered_ultra_instinct": "Mastered Ultra Instinct",
   "race.dragonminez.saiyan.group.dmz_multiverse_alignment_variants": "Alignment Variants",
   "race.dragonminez.saiyan.form.dmz_multiverse_alignment_variants.super_saiyan_rose": "Super Saiyan Blue",
-  "race.dragonminez.saiyan.form.dmz_multiverse_alignment_variants.super_saiyan_evolved_corrupted": "Super Saiyan Evolved"
+  "race.dragonminez.saiyan.form.dmz_multiverse_alignment_variants.super_saiyan_evolved_corrupted": "Super Saiyan Evolved",
+  "command.dmz_multiverse.maxskills.success.single": "Maxed %s applicable Dragon Mine Z skills for %s",
+  "command.dmz_multiverse.maxskills.success.multiple": "Maxed %s applicable Dragon Mine Z skills across %s players",
+  "command.dmz_multiverse.maxskills.skipped": "Skipped %s players without a created Dragon Mine Z character",
+  "command.dmz_multiverse.maxskills.no_characters": "No selected player has a created Dragon Mine Z character with applicable skills",
+  "command.dmz_multiverse.maxskills.config_unavailable": "Dragon Mine Z's skills configuration is unavailable"
 }
