@@ -9,15 +9,17 @@ The addon adds two progression branches for Saiyan characters:
 | Form | TP cost | Mastery requirement |
 | --- | ---: | --- |
 | Super Saiyan God | 5,000,000 | None |
-| Super Saiyan Blue | 10,000,000 | Super Saiyan God 100 |
-| Super Saiyan Evolved | 15,000,000 | Super Saiyan Blue 100 |
-| Ultra Instinct | 30,000,000 | Super Saiyan Blue 100 |
-| Ultra Ego | 50,000,000 | Super Saiyan Evolved 100 |
+| SSJ Blue | 10,000,000 | Super Saiyan God 100 |
+| SSJ Blue Evolved | 15,000,000 | SSJ Blue 100 |
+| Ultra Instinct | 30,000,000 | SSJ Blue 100 |
+| Ultra Ego | 50,000,000 | SSJ Blue Evolved 100 |
 | Mastered Ultra Instinct | 55,000,000 | Ultra Instinct 100 |
 
-Blue and Evolved automatically use their rose/dark-rose palettes when alignment is 40 or lower. Their progression and mastery remain attached to the canonical forms. Ultra Instinct, Ultra Ego, and Mastered Ultra Instinct have their requested aura, outline, scale, hair, eye, and lightning effects, plus tail-color overrides for characters that already have a Saiyan tail.
+SSJ Rose permanently unlocks when a character has reached the SSJ Blue tier while at alignment 40 or lower. SSJ Rose Evolved permanently unlocks the same way at the SSJ Blue Evolved tier. After either Rose form has been unlocked, the character can select and transform into it at any alignment. Each Blue/Rose pair shares its progression and mastery.
 
-All six forms use the custom divine transformation sound. Charging an aura in one of these forms uses the custom looping charge sound with a short fade in and fade out.
+Ultra Instinct, Ultra Ego, and Mastered Ultra Instinct have their requested aura, outline, scale, hair, eye, and lightning effects, plus tail-color overrides for characters that already have a Saiyan tail.
+
+All divine forms use the custom divine transformation sound. Charging an aura in one of these forms uses the custom looping charge sound with a short fade in and fade out.
 
 On first launch, the addon creates editable form files under `config/dragonminez/races/saiyan/forms/` and adds the required skill costs to Dragon Mine Z's existing configuration. Existing generated form files are never overwritten, so server owners retain control of their balance settings.
 
@@ -66,6 +68,8 @@ The distributable JAR is written to `build/libs/`. The development runtime resol
 On Windows, double-click `Launch Minecraft Test Client.bat` in the project folder. It opens the Minecraft 1.20.1 Forge development client with Dragon Mine Z, its required dependencies, and Dragon Mine Z: Multiverse already loaded. The first launch may take several minutes while Gradle prepares the test environment.
 
 For a command smoke test, create a Dragon Mine Z character and run `/dmzmultiverse maxskills`. Confirm that movement and utility skills reach their configured caps, predefined ki and strike attacks appear in the technique list, and form and stack-form entries remain unchanged. Run `/dmzmultiverse maxskills @a` as an operator to verify target selection and multiplayer synchronization.
+
+For a Rose-form persistence test, reach the SSJ Blue or SSJ Blue Evolved tier while the character's alignment is 40 or lower and confirm the corresponding Rose form becomes available. Then raise alignment above 40, reconnect, and confirm the unlocked Rose form remains selectable and transforms normally.
 
 ## License and attribution
 

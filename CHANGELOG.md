@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented here.
 
+## 0.2.2 - 2026-08-13
+
+- Rename the forms to SSJ Blue, SSJ Blue Evolved, SSJ Rose, and SSJ Rose Evolved.
+- Require alignment 40 or lower only to unlock each Rose form, then keep that unlock permanently available at any alignment.
+
 ## 0.2.1 - 2026-08-13
 
 - Make the low-alignment Super Saiyan Blue and Evolved variants server-authoritative forms shared by every client.

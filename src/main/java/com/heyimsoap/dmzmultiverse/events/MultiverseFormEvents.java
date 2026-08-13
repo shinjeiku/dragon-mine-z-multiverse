@@ -9,6 +9,7 @@ import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.StatsProvider;
 import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.extras.FormMasteries;
+import com.dragonminez.common.util.TransformationsHelper;
 import com.heyimsoap.dmzmultiverse.DMZMultiverse;
 import com.heyimsoap.dmzmultiverse.forms.MultiverseForms;
 import net.minecraft.server.level.ServerPlayer;
@@ -61,8 +62,9 @@ public final class MultiverseFormEvents {
         }
 
         changed |= repairFormSkills(stats);
+        changed |= migrateAlignmentUnlocks(stats.getCharacter());
         changed |= synchronizeAlignmentMasteries(stats.getCharacter());
-        changed |= reconcileAlignmentVariant(player, stats);
+        changed |= discoverAlignmentVariants(stats);
         if (changed) {
             sync(player);
         }
@@ -127,73 +129,86 @@ public final class MultiverseFormEvents {
         masteries.setMastery(group, form, value, Math.max(maximum, value));
     }
 
-    private static boolean reconcileAlignmentVariant(ServerPlayer player, StatsData stats) {
-        Character character = stats.getCharacter();
-        boolean evil = stats.getResources().getAlignment() <= MultiverseForms.EVIL_ALIGNMENT_MAX;
-        boolean changed = reconcileSelection(character, evil);
-
-        MultiverseForms.FormKey target = alignmentTarget(
-                character.getActiveFormGroup(),
-                character.getActiveForm(),
-                evil
-        );
-        if (target == null) {
-            return changed;
-        }
-
-        float[] resources = stats.snapshotMultiplierResources();
-        int durationTicks = character.getActiveFormItemDurationTicks();
-        character.setActiveForm(target.group(), target.form());
-        character.setActiveFormItemDurationTicks(durationTicks);
-        stats.restoreMultiplierGains(player, resources);
-        player.refreshDimensions();
-        return true;
-    }
-
-    private static boolean reconcileSelection(Character character, boolean evil) {
-        MultiverseForms.FormKey target = alignmentTarget(
-                character.getSelectedFormGroup(),
-                character.getSelectedForm(),
-                evil
-        );
-        if (target == null) {
+    private static boolean migrateAlignmentUnlocks(Character character) {
+        FormMasteries masteries = character.getFormMasteries();
+        if (masteries.getMastery(
+                MultiverseForms.ALIGNMENT_UNLOCK_STATE_GROUP,
+                MultiverseForms.ALIGNMENT_UNLOCK_MIGRATION
+        ) >= 1.0) {
             return false;
         }
-        character.setSelectedFormGroup(target.group());
-        character.setSelectedForm(target.form());
+
+        // Grandfather only durable evidence that the variant itself was
+        // selected or used. The previous release mirrored variant mastery for
+        // every Saiyan, so mastery alone cannot prove low-alignment discovery.
+        migrateVariantUnlock(character, MultiverseForms.SUPER_SAIYAN_ROSE);
+        migrateVariantUnlock(character, MultiverseForms.SUPER_SAIYAN_EVOLVED_CORRUPTED);
+        masteries.setMastery(
+                MultiverseForms.ALIGNMENT_UNLOCK_STATE_GROUP,
+                MultiverseForms.ALIGNMENT_UNLOCK_MIGRATION,
+                1.0,
+                1.0
+        );
         return true;
     }
 
-    private static MultiverseForms.FormKey alignmentTarget(String group, String form, boolean evil) {
-        if (evil && MultiverseForms.GOD_GROUP.equalsIgnoreCase(group)) {
-            if (MultiverseForms.SUPER_SAIYAN_BLUE.equalsIgnoreCase(form)) {
-                return new MultiverseForms.FormKey(
-                        MultiverseForms.ALIGNMENT_GROUP,
-                        MultiverseForms.SUPER_SAIYAN_ROSE
-                );
-            }
-            if (MultiverseForms.SUPER_SAIYAN_EVOLVED.equalsIgnoreCase(form)) {
-                return new MultiverseForms.FormKey(
-                        MultiverseForms.ALIGNMENT_GROUP,
-                        MultiverseForms.SUPER_SAIYAN_EVOLVED_CORRUPTED
-                );
-            }
+    private static void migrateVariantUnlock(Character character, String variantForm) {
+        FormMasteries masteries = character.getFormMasteries();
+        if (isFormReference(character.getActiveFormGroup(), character.getActiveForm(), variantForm)
+                || isFormReference(character.getSelectedFormGroup(), character.getSelectedForm(), variantForm)
+                || (character.isHasPreviousFormRecord()
+                    && isFormReference(character.getPreviousFormGroup(), character.getPreviousForm(), variantForm))
+                || character.getFormsUsedBefore().getFormGroup(MultiverseForms.ALIGNMENT_GROUP).stream()
+                    .anyMatch(variantForm::equalsIgnoreCase)) {
+            grantVariantUnlock(masteries, variantForm);
         }
-        if (!evil && MultiverseForms.ALIGNMENT_GROUP.equalsIgnoreCase(group)) {
-            if (MultiverseForms.SUPER_SAIYAN_ROSE.equalsIgnoreCase(form)) {
-                return new MultiverseForms.FormKey(
-                        MultiverseForms.GOD_GROUP,
-                        MultiverseForms.SUPER_SAIYAN_BLUE
-                );
-            }
-            if (MultiverseForms.SUPER_SAIYAN_EVOLVED_CORRUPTED.equalsIgnoreCase(form)) {
-                return new MultiverseForms.FormKey(
-                        MultiverseForms.GOD_GROUP,
-                        MultiverseForms.SUPER_SAIYAN_EVOLVED
-                );
-            }
+    }
+
+    private static boolean discoverAlignmentVariants(StatsData stats) {
+        if (stats.getResources().getAlignment() > MultiverseForms.EVIL_ALIGNMENT_MAX
+                || (stats.getPlayer() != null && stats.getPlayer().isCreative())) {
+            return false;
         }
-        return null;
+
+        List<FormConfig.FormData> unlockedCanonicalForms = TransformationsHelper.getUnlockedForms(
+                stats,
+                MultiverseForms.SAIYAN_RACE,
+                MultiverseForms.GOD_GROUP
+        );
+        boolean blueUnlocked = hasForm(unlockedCanonicalForms, MultiverseForms.SUPER_SAIYAN_BLUE);
+        boolean evolvedUnlocked = hasForm(unlockedCanonicalForms, MultiverseForms.SUPER_SAIYAN_EVOLVED);
+        FormMasteries masteries = stats.getCharacter().getFormMasteries();
+        boolean changed = blueUnlocked
+                && grantVariantUnlock(masteries, MultiverseForms.SUPER_SAIYAN_ROSE);
+        changed |= evolvedUnlocked
+                && grantVariantUnlock(masteries, MultiverseForms.SUPER_SAIYAN_EVOLVED_CORRUPTED);
+        return changed;
+    }
+
+    private static boolean hasForm(List<FormConfig.FormData> forms, String formName) {
+        return forms.stream().anyMatch(form -> formName.equalsIgnoreCase(form.getName()));
+    }
+
+    private static boolean grantVariantUnlock(FormMasteries masteries, String variantForm) {
+        double current = masteries.getMastery(
+                MultiverseForms.ALIGNMENT_UNLOCK_STATE_GROUP,
+                variantForm
+        );
+        if (current >= MultiverseForms.ALIGNMENT_UNLOCK_MARKER) {
+            return false;
+        }
+        masteries.setMastery(
+                MultiverseForms.ALIGNMENT_UNLOCK_STATE_GROUP,
+                variantForm,
+                MultiverseForms.ALIGNMENT_UNLOCK_MARKER,
+                MultiverseForms.ALIGNMENT_UNLOCK_MARKER
+        );
+        return true;
+    }
+
+    private static boolean isFormReference(String group, String form, String variantForm) {
+        return MultiverseForms.ALIGNMENT_GROUP.equalsIgnoreCase(group)
+                && variantForm.equalsIgnoreCase(form);
     }
 
     private static void sync(ServerPlayer player) {

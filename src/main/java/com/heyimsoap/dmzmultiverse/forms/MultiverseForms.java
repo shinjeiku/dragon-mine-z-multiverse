@@ -62,6 +62,9 @@ public final class MultiverseForms {
     public static final String SUPER_SAIYAN_EVOLVED_CORRUPTED = "super_saiyan_evolved_corrupted";
 
     public static final int EVIL_ALIGNMENT_MAX = 40;
+    public static final String ALIGNMENT_UNLOCK_STATE_GROUP = "dmz_multiverse_alignment_unlocks";
+    public static final String ALIGNMENT_UNLOCK_MIGRATION = "migration_v1";
+    public static final double ALIGNMENT_UNLOCK_MARKER = 100.0;
 
     private static final String CONFIG_ROOT = "dragonminez";
     private static final String SKILLS_CONFIG = "skills";
@@ -171,33 +174,7 @@ public final class MultiverseForms {
         return ALIGNMENT_GROUP.equals(normalize(groupId)) && ALIGNMENT_FORMS.contains(normalize(formId));
     }
 
-    /** Returns the canonical form id for a canonical or internal variant id. */
-    public static String canonicalEquivalent(String formId) {
-        return switch (normalize(formId)) {
-            case SUPER_SAIYAN_ROSE -> SUPER_SAIYAN_BLUE;
-            case SUPER_SAIYAN_EVOLVED_CORRUPTED -> SUPER_SAIYAN_EVOLVED;
-            default -> normalize(formId);
-        };
-    }
-
-    /** Returns the canonical group/form pair for sound and transition logic. */
-    public static FormKey canonicalEquivalent(String groupId, String formId) {
-        String group = normalize(groupId);
-        String form = canonicalEquivalent(formId);
-        if (ALIGNMENT_GROUP.equals(group) && ALIGNMENT_FORMS.contains(normalize(formId))) {
-            group = GOD_GROUP;
-        }
-        return new FormKey(group, form);
-    }
-
-    /** Returns whether two real form IDs represent the same progression tier. */
-    public static boolean isSilentVariantSwap(String oldGroup, String oldForm, String newGroup, String newForm) {
-        FormKey oldCanonical = canonicalEquivalent(oldGroup, oldForm);
-        FormKey newCanonical = canonicalEquivalent(newGroup, newForm);
-        return oldCanonical.equals(newCanonical)
-                && (!normalize(oldGroup).equals(normalize(newGroup)) || !normalize(oldForm).equals(normalize(newForm)));
-    }
-
+    /** Immutable group/form identity used by transition and sound tracking. */
     public record FormKey(String group, String form) {
     }
 
@@ -268,6 +245,13 @@ public final class MultiverseForms {
         JsonObject alignmentForms = getRequiredObject(alignmentRoot, "forms", alignmentPath);
         JsonObject rose = getRequiredObject(alignmentForms, SUPER_SAIYAN_ROSE, alignmentPath);
         alignmentChanged |= setInt(rose, "unlockOnSkillLevel", 2);
+        alignmentChanged |= setString(
+                rose,
+                "formRequisite",
+                alignmentUnlockRequisite(SUPER_SAIYAN_GOD, SUPER_SAIYAN_ROSE)
+        );
+        alignmentChanged |= setString(rose, "formRequisiteType", "all");
+        alignmentChanged |= setDouble(rose, "unlockOnMastery", ALIGNMENT_UNLOCK_MARKER);
         alignmentChanged |= addMasteryShare(
                 rose,
                 GOD_GROUP + "." + SUPER_SAIYAN_BLUE,
@@ -279,6 +263,13 @@ public final class MultiverseForms {
                 alignmentPath
         );
         alignmentChanged |= setInt(corrupted, "unlockOnSkillLevel", 3);
+        alignmentChanged |= setString(
+                corrupted,
+                "formRequisite",
+                alignmentUnlockRequisite(SUPER_SAIYAN_BLUE, SUPER_SAIYAN_EVOLVED_CORRUPTED)
+        );
+        alignmentChanged |= setString(corrupted, "formRequisiteType", "all");
+        alignmentChanged |= setDouble(corrupted, "unlockOnMastery", ALIGNMENT_UNLOCK_MARKER);
         alignmentChanged |= addMasteryShare(
                 corrupted,
                 GOD_GROUP + "." + SUPER_SAIYAN_EVOLVED,
@@ -305,6 +296,15 @@ public final class MultiverseForms {
     private static boolean setInt(JsonObject object, String key, int value) {
         if (object.has(key) && object.get(key).isJsonPrimitive()
                 && object.get(key).getAsInt() == value) {
+            return false;
+        }
+        object.addProperty(key, value);
+        return true;
+    }
+
+    private static boolean setDouble(JsonObject object, String key, double value) {
+        if (object.has(key) && object.get(key).isJsonPrimitive()
+                && Double.compare(object.get(key).getAsDouble(), value) == 0) {
             return false;
         }
         object.addProperty(key, value);
@@ -529,18 +529,26 @@ public final class MultiverseForms {
         forms.put(SUPER_SAIYAN_ROSE, form(
                 SUPER_SAIYAN_ROSE, 2, "ssj", ROSE, ROSE, ROSE, RED,
                 DEFAULT_SAIYAN_SCALE, 5.50, 4.0000, 0.26,
-                GOD_GROUP + "." + SUPER_SAIYAN_GOD, 100.0, false, "", false, "", "", 1.5,
+                alignmentUnlockRequisite(SUPER_SAIYAN_GOD, SUPER_SAIYAN_ROSE),
+                ALIGNMENT_UNLOCK_MARKER, false, "", false, "", "", 1.5,
                 List.of(GOD_GROUP + "." + SUPER_SAIYAN_BLUE)
         ));
         forms.put(SUPER_SAIYAN_EVOLVED_CORRUPTED, form(
                 SUPER_SAIYAN_EVOLVED_CORRUPTED, 3, "ssj2", DARK_ROSE, DARK_ROSE, DARK_ROSE, RED,
                 DEFAULT_SAIYAN_SCALE, 6.00, 4.3750, 0.28,
-                GOD_GROUP + "." + SUPER_SAIYAN_BLUE, 100.0, true, SSJ2_LIGHTNING, false, "", "", 1.5,
+                alignmentUnlockRequisite(SUPER_SAIYAN_BLUE, SUPER_SAIYAN_EVOLVED_CORRUPTED),
+                ALIGNMENT_UNLOCK_MARKER, true, SSJ2_LIGHTNING, false, "", "", 1.5,
                 List.of(GOD_GROUP + "." + SUPER_SAIYAN_EVOLVED)
         ));
 
         group.setForms(forms);
         return group;
+    }
+
+    private static String alignmentUnlockRequisite(String canonicalForm, String variantForm) {
+        return GOD_GROUP + "." + canonicalForm
+                + ","
+                + ALIGNMENT_UNLOCK_STATE_GROUP + "." + variantForm;
     }
 
     private static FormConfig group(String groupName, String formType) {

@@ -72,10 +72,30 @@ jobs:
           assert alignment_config['formType'] == 'dmz_multiverse_god_tiers'
           assert variants['super_saiyan_rose']['unlockOnSkillLevel'] == 2
           assert variants['super_saiyan_evolved_corrupted']['unlockOnSkillLevel'] == 3
+          assert variants['super_saiyan_rose']['formRequisite'] == (
+              'dmz_multiverse_godforms.super_saiyan_god,'
+              'dmz_multiverse_alignment_unlocks.super_saiyan_rose'
+          )
+          assert variants['super_saiyan_evolved_corrupted']['formRequisite'] == (
+              'dmz_multiverse_godforms.super_saiyan_blue,'
+              'dmz_multiverse_alignment_unlocks.super_saiyan_evolved_corrupted'
+          )
+          assert all(form['formRequisiteType'] == 'all' for form in variants.values())
+          assert all(form['unlockOnMastery'] == 100.0 for form in variants.values())
           assert 'dmz_multiverse_alignment_variants.super_saiyan_rose' in god['super_saiyan_blue']['shareMasteryWith']
           assert 'dmz_multiverse_godforms.super_saiyan_blue' in variants['super_saiyan_rose']['shareMasteryWith']
           assert 'dmz_multiverse_alignment_variants.super_saiyan_evolved_corrupted' in god['super_saiyan_evolved']['shareMasteryWith']
           assert 'dmz_multiverse_godforms.super_saiyan_evolved' in variants['super_saiyan_evolved_corrupted']['shareMasteryWith']
+
+          with Path('src/main/resources/assets/dmz_multiverse/lang/en_us.json').open(encoding='utf-8') as handle:
+              language = json.load(handle)
+          expected_form_names = {
+              'race.dragonminez.saiyan.form.dmz_multiverse_godforms.super_saiyan_blue': 'SSJ Blue',
+              'race.dragonminez.saiyan.form.dmz_multiverse_godforms.super_saiyan_evolved': 'SSJ Blue Evolved',
+              'race.dragonminez.saiyan.form.dmz_multiverse_alignment_variants.super_saiyan_rose': 'SSJ Rose',
+              'race.dragonminez.saiyan.form.dmz_multiverse_alignment_variants.super_saiyan_evolved_corrupted': 'SSJ Rose Evolved',
+          }
+          assert all(language.get(key) == name for key, name in expected_form_names.items())
 
           with (root / 'skills.json').open(encoding='utf-8') as handle:
               skills = json.load(handle)
