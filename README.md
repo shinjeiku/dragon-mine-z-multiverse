@@ -56,6 +56,6 @@ The distributable JAR is written to `build/libs/`. The development runtime resol
 
 Copyright (c) 2026 HeyImSoap. Code and original project artwork are licensed under the [GNU General Public License v3.0 or later](LICENSE).
 
-The two custom audio recordings were supplied by the project owner. Their public redistribution status must be documented in [ASSET_NOTICES.md](ASSET_NOTICES.md) before publishing a release containing them.
+The two custom audio recordings were supplied and cleared for redistribution by the project owner. Details are recorded in [ASSET_NOTICES.md](ASSET_NOTICES.md).
 
 This is an independent addon and is not affiliated with or endorsed by the Dragon Mine Z team, Mojang Studios, Microsoft, or the owners of Dragon Ball. Dragon Mine Z is available from its [official CurseForge page](https://www.curseforge.com/minecraft/mc-mods/dragonminez) and [source repository](https://github.com/DragonMineZ/dragonminez).
