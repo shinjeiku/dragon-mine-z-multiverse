@@ -1,0 +1,23 @@
+{
+  "item.dmz_multiverse.multiversal_compass": "Multiversal Compass",
+  "destination.dmz_multiverse.unset": "Not attuned",
+  "destination.dmz_multiverse.namek": "Namek",
+  "destination.dmz_multiverse.otherworld": "Otherworld",
+  "destination.dmz_multiverse.sacred_kai_planet": "Sacred Kai Planet",
+  "destination.dmz_multiverse.time_chamber": "Hyperbolic Time Chamber",
+  "destination.dmz_multiverse.overworld": "Overworld",
+  "destination.dmz_multiverse.nether": "Nether",
+  "destination.dmz_multiverse.end": "The End",
+  "tooltip.dmz_multiverse.multiversal_compass.destination": "Destination: %s",
+  "tooltip.dmz_multiverse.multiversal_compass.use": "Use to cross into the selected world",
+  "tooltip.dmz_multiverse.multiversal_compass.cycle": "Sneak + use to select the next world",
+  "message.dmz_multiverse.destination_selected": "Compass attuned to %s",
+  "message.dmz_multiverse.traveled": "Crossed the rift to %s",
+  "message.dmz_multiverse.character_dead": "You cannot cross the multiverse while your Dragon Mine Z character is dead",
+  "message.dmz_multiverse.destination_locked": "%s has not been unlocked",
+  "message.dmz_multiverse.destination_unavailable": "%s is not available on this server",
+  "message.dmz_multiverse.already_there": "You are already in %s",
+  "message.dmz_multiverse.no_safe_arrival": "No safe arrival point was found in %s",
+  "message.dmz_multiverse.travel_denied": "Travel to %s was denied",
+  "message.dmz_multiverse.no_destinations": "No multiverse destinations are available"
+}

@@ -1,0 +1,51 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: bash gradlew build --no-daemon
+
+      - name: Dedicated-server smoke test
+        shell: bash
+        run: |
+          mkdir -p run
+          printf 'eula=true\n' > run/eula.txt
+          printf 'stop\n' | timeout 8m bash gradlew runServer --no-daemon
+          if grep -Fq 'Parsing error loading recipe dmz_multiverse' run/logs/latest.log; then
+            echo 'Dragon Mine Z: Multiverse recipe loading failed.'
+            exit 1
+          fi
+
+      - name: Upload distributable
+        uses: actions/upload-artifact@v4
+        with:
+          name: dmz_multiverse-${{ github.sha }}
+          path: |
+            build/libs/dmz_multiverse-*.jar
+            !build/libs/*-sources.jar
+          if-no-files-found: error

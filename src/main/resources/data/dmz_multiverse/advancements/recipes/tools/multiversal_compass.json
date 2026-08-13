@@ -1,0 +1,27 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_kikono_shard": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "dragonminez:kikono_shard"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_kikono_shard"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "dmz_multiverse:multiversal_compass"
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+# Gradle
+.gradle/
+build/
+
+# Forge run directories
+run/
+run-data/
+logs/
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+bin/
+out/
+
+# Operating systems
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local artifacts and secrets
+*.log
+*.jks
+*.keystore
+.env
