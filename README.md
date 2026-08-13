@@ -8,7 +8,7 @@ Dragon Mine Z: Multiverse is a client-and-server addon for Dragon Mine Z. Its fi
 | --- | --- |
 | Minecraft | 1.20.1 |
 | Forge | 47.4.10 or newer 47.x build |
-| Dragon Mine Z | 2.1.3 through 2.1.x |
+| Dragon Mine Z | 2.1.3 |
 | Java | 17 |
 
 Dragon Mine Z and its required dependencies—GeckoLib, TerraBlender, and Curios API—must also be installed on both the client and server.

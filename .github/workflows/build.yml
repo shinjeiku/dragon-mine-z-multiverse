@@ -36,6 +36,9 @@ jobs:
           mkdir -p run
           printf 'eula=true\n' > run/eula.txt
           printf 'stop\n' | timeout 8m bash gradlew runServer --no-daemon
+          test -f run/logs/latest.log
+          grep -Fq 'Done (' run/logs/latest.log
+          grep -Fq 'All dimensions are saved' run/logs/latest.log
           if grep -Fq 'Parsing error loading recipe dmz_multiverse' run/logs/latest.log; then
             echo 'Dragon Mine Z: Multiverse recipe loading failed.'
             exit 1

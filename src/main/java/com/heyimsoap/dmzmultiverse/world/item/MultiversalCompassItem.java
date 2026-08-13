@@ -69,13 +69,13 @@ public final class MultiversalCompassItem extends Item {
         MultiverseDestination destination = selected.get();
         setDestination(stack, destination);
         MultiverseTravelService.TravelResult result = MultiverseTravelService.travel(serverPlayer, destination);
+        int cooldown = MultiverseConfig.teleportCooldownTicks();
+        if (cooldown > 0 && result != MultiverseTravelService.TravelResult.ALREADY_THERE) {
+            serverPlayer.getCooldowns().addCooldown(this, cooldown);
+        }
 
         return switch (result) {
             case SUCCESS -> {
-                int cooldown = MultiverseConfig.teleportCooldownTicks();
-                if (cooldown > 0) {
-                    serverPlayer.getCooldowns().addCooldown(this, cooldown);
-                }
                 serverPlayer.displayClientMessage(
                         Component.translatable("message.dmz_multiverse.traveled", destination.displayName())
                                 .withStyle(ChatFormatting.LIGHT_PURPLE),

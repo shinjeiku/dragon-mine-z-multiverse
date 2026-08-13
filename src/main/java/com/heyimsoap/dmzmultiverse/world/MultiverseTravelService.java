@@ -17,6 +17,8 @@ import java.util.Collections;
 import java.util.Optional;
 
 public final class MultiverseTravelService {
+    private static final int MAX_ARRIVAL_CANDIDATES = 8_192;
+
     private MultiverseTravelService() {
     }
 
@@ -85,19 +87,22 @@ public final class MultiverseTravelService {
         int baseX = Mth.floor(anchor.x);
         int baseZ = Mth.floor(anchor.z);
         int radius = MultiverseConfig.ARRIVAL_SEARCH_RADIUS.get();
+        SearchBudget budget = new SearchBudget(MAX_ARRIVAL_CANDIDATES);
 
-        return searchColumns(baseX, baseZ, radius, (x, z) -> switch (strategy) {
-            case SURFACE -> searchSurfaceColumn(level, player, x, z);
-            case DESCEND_FROM_ANCHOR -> searchDownwardColumn(level, player, x, z, Mth.floor(anchor.y));
-            case NETHER_INTERIOR -> searchNearbyVerticalColumn(level, player, x, z, Mth.floor(anchor.y));
-            case END_PLATFORM -> searchDownwardColumn(level, player, x, z, Mth.floor(anchor.y));
+        return searchColumns(level, baseX, baseZ, radius, budget, (x, z) -> switch (strategy) {
+            case SURFACE -> searchSurfaceColumn(level, player, x, z, budget);
+            case DESCEND_FROM_ANCHOR -> searchDownwardColumn(level, player, x, z, Mth.floor(anchor.y), budget);
+            case NETHER_INTERIOR -> searchNearbyVerticalColumn(level, player, x, z, Mth.floor(anchor.y), budget);
+            case END_PLATFORM -> searchDownwardColumn(level, player, x, z, Mth.floor(anchor.y), budget);
         });
     }
 
     private static Optional<BlockPos> searchColumns(
+            ServerLevel level,
             int baseX,
             int baseZ,
             int radius,
+            SearchBudget budget,
             ColumnSearch columnSearch
     ) {
         for (int ring = 0; ring <= radius; ring++) {
@@ -107,7 +112,17 @@ public final class MultiverseTravelService {
                         continue;
                     }
 
-                    Optional<BlockPos> result = columnSearch.find(baseX + xOffset, baseZ + zOffset);
+                    if (budget.exhausted()) {
+                        return Optional.empty();
+                    }
+
+                    int x = baseX + xOffset;
+                    int z = baseZ + zOffset;
+                    if (!level.getWorldBorder().isWithinBounds(new BlockPos(x, level.getMinBuildHeight(), z))) {
+                        continue;
+                    }
+
+                    Optional<BlockPos> result = columnSearch.find(x, z);
                     if (result.isPresent()) {
                         return result;
                     }
@@ -118,13 +133,22 @@ public final class MultiverseTravelService {
         return Optional.empty();
     }
 
-    private static Optional<BlockPos> searchSurfaceColumn(ServerLevel level, ServerPlayer player, int x, int z) {
+    private static Optional<BlockPos> searchSurfaceColumn(
+            ServerLevel level,
+            ServerPlayer player,
+            int x,
+            int z,
+            SearchBudget budget
+    ) {
         int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
         int startY = Mth.clamp(surfaceY, minimumStandingY(level), maximumStandingY(level));
         int lowestY = Math.max(minimumStandingY(level), startY - 16);
 
         for (int y = startY; y >= lowestY; y--) {
             BlockPos candidate = new BlockPos(x, y, z);
+            if (!budget.tryCandidate()) {
+                return Optional.empty();
+            }
             if (isSafe(level, player, candidate)) {
                 return Optional.of(candidate);
             }
@@ -137,13 +161,17 @@ public final class MultiverseTravelService {
             ServerPlayer player,
             int x,
             int z,
-            int requestedY
+            int requestedY,
+            SearchBudget budget
     ) {
         int minimumY = minimumStandingY(level);
         int startY = Mth.clamp(requestedY, minimumY, maximumStandingY(level));
 
         for (int y = startY; y >= minimumY; y--) {
             BlockPos candidate = new BlockPos(x, y, z);
+            if (!budget.tryCandidate()) {
+                return Optional.empty();
+            }
             if (isSafe(level, player, candidate)) {
                 return Optional.of(candidate);
             }
@@ -156,7 +184,8 @@ public final class MultiverseTravelService {
             ServerPlayer player,
             int x,
             int z,
-            int requestedY
+            int requestedY,
+            SearchBudget budget
     ) {
         int minimumY = minimumStandingY(level);
         int maximumY = maximumStandingY(level);
@@ -167,6 +196,9 @@ public final class MultiverseTravelService {
             int lowerY = preferredY - distance;
             if (lowerY >= minimumY) {
                 BlockPos lower = new BlockPos(x, lowerY, z);
+                if (!budget.tryCandidate()) {
+                    return Optional.empty();
+                }
                 if (isSafe(level, player, lower)) {
                     return Optional.of(lower);
                 }
@@ -175,6 +207,9 @@ public final class MultiverseTravelService {
             int upperY = preferredY + distance;
             if (distance > 0 && upperY <= maximumY) {
                 BlockPos upper = new BlockPos(x, upperY, z);
+                if (!budget.tryCandidate()) {
+                    return Optional.empty();
+                }
                 if (isSafe(level, player, upper)) {
                     return Optional.of(upper);
                 }
@@ -240,6 +275,27 @@ public final class MultiverseTravelService {
     @FunctionalInterface
     private interface ColumnSearch {
         Optional<BlockPos> find(int x, int z);
+    }
+
+    private static final class SearchBudget {
+        private final int limit;
+        private int checked;
+
+        private SearchBudget(int limit) {
+            this.limit = limit;
+        }
+
+        private boolean tryCandidate() {
+            if (checked >= limit) {
+                return false;
+            }
+            checked++;
+            return true;
+        }
+
+        private boolean exhausted() {
+            return checked >= limit;
+        }
     }
 
     public enum TravelResult {
