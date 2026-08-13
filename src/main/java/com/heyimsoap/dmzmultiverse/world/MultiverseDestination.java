@@ -72,12 +72,12 @@ public final class MultiverseDestination {
     }
 
     public Vec3 resolveAnchor(ServerPlayer player, ServerLevel targetLevel) {
-        if (dmzDefinition != null) {
-            return dmzDefinition.resolvePosition(player.position());
+        if (arrivalStrategy == ArrivalStrategy.END_PLATFORM) {
+            return Vec3.atBottomCenterOf(ServerLevel.END_SPAWN_POINT);
         }
 
-        if (dimension.equals(Level.END)) {
-            return Vec3.atBottomCenterOf(ServerLevel.END_SPAWN_POINT);
+        if (dmzDefinition != null) {
+            return dmzDefinition.resolvePosition(player.position());
         }
 
         double scale = DimensionType.getTeleportationScale(

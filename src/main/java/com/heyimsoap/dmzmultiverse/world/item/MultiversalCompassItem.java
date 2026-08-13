@@ -22,6 +22,7 @@ import java.util.Optional;
 
 public final class MultiversalCompassItem extends Item {
     private static final String DESTINATION_TAG = DMZMultiverse.MOD_ID + ".destination";
+    private static final String DESTINATION_NAME_TAG = DMZMultiverse.MOD_ID + ".destination_name";
 
     public MultiversalCompassItem(Properties properties) {
         super(properties);
@@ -159,7 +160,9 @@ public final class MultiversalCompassItem extends Item {
     }
 
     private static void setDestination(ItemStack stack, MultiverseDestination destination) {
-        stack.getOrCreateTag().putString(DESTINATION_TAG, destination.id());
+        CompoundTag tag = stack.getOrCreateTag();
+        tag.putString(DESTINATION_TAG, destination.id());
+        tag.putString(DESTINATION_NAME_TAG, Component.Serializer.toJson(destination.displayName()));
     }
 
     @Override
@@ -167,7 +170,7 @@ public final class MultiversalCompassItem extends Item {
         String storedId = selectedId(stack);
         Component destinationName = storedId == null
                 ? Component.translatable("destination.dmz_multiverse.unset")
-                : MultiverseDestination.tooltipName(storedId);
+                : storedDestinationName(stack).orElseGet(() -> MultiverseDestination.tooltipName(storedId));
 
         tooltip.add(Component.translatable("tooltip.dmz_multiverse.multiversal_compass.destination", destinationName)
                 .withStyle(ChatFormatting.AQUA));
@@ -180,5 +183,18 @@ public final class MultiversalCompassItem extends Item {
     @Override
     public boolean isFoil(ItemStack stack) {
         return true;
+    }
+
+    private static Optional<Component> storedDestinationName(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains(DESTINATION_NAME_TAG)) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.ofNullable(Component.Serializer.fromJson(tag.getString(DESTINATION_NAME_TAG)));
+        } catch (RuntimeException ignored) {
+            return Optional.empty();
+        }
     }
 }
