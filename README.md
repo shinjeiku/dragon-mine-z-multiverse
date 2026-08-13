@@ -52,6 +52,10 @@ The repository includes a pinned Gradle wrapper and a Java 17 toolchain definiti
 
 The distributable JAR is written to `build/libs/`. The development runtime resolves Dragon Mine Z 2.1.3 from its pinned CurseForge file ID; no upstream JAR is committed to this repository.
 
+## Testing in Minecraft
+
+On Windows, double-click `Launch Minecraft Test Client.bat` in the project folder. It opens the Minecraft 1.20.1 Forge development client with Dragon Mine Z, its required dependencies, and Dragon Mine Z: Multiverse already loaded. The first launch may take several minutes while Gradle prepares the test environment.
+
 ## License and attribution
 
 Copyright (c) 2026 HeyImSoap. Code and original project artwork are licensed under the [GNU General Public License v3.0 or later](LICENSE).
