@@ -9,6 +9,7 @@ logs/
 
 # IDEs
 .idea/
+.vscode/
 *.iml
 *.ipr
 *.iws
